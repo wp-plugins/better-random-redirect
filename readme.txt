@@ -3,19 +3,15 @@ Contributors: robert@peakepro.com
 Tags: random,post,category
 Requires at least: 3.0.0
 Tested up to: 4.0.1
-Stable tag: 1.0
+Stable tag: 1.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
-Based on the original Random Redirect, this plugin enables random redirection to a post in a manner that won't overload your MySQL database for a large website under a high volume of clicks. Also perfectly suitable for smaller sites as well. Supports picking a random post from a specific category, and setting your own redirector URL.
+Based on the original Random Redirect, this plugin enables efficient, easy random redirection to a post. Supports setting a category for all random redirects, shortcodes to generate URLs that can override the default category, and setting your own redirector URL. Designed to scale to handle high-traffic websites with thousands of posts by using a more efficient strategy than most other redirection plugins employ.
 
 == Description ==
 
-Based on the original Random Redirect, this plugin enables random redirection to a post in a manner that won't overload your MySQL database for a large website under a high volume of clicks.
-
-This is because many random redirect plugins rely on the 'orderby' => 'rand' constraint in Wordpress, or manually use 'ORDER BY RAND()' in their MySQL queries. This results in notoriously poor performance and can really cause problems with your MySQL server if this operation is heavily repeated on a website with lots of posts.
-
-This plugin uses a more efficient approach, including transient caching of all eligible posts for a random selection, to minimise the time it takes to pick a true random post. Supports picking a random post from a specific category, and setting your own redirector URL.
+Based on the original Random Redirect, this plugin enables efficient, easy random redirection to a post. Supports setting a category for all random redirects, shortcodes to generate URLs that can override the default category, and setting your own redirector URL. Designed to scale to handle high-traffic websites with thousands of posts by using a more efficient strategy than most other redirection plugins employ.
 
 Based on the original Random Redirect by Matt Mullenweg https://wordpress.org/plugins/random-redirect/
 
@@ -33,25 +29,41 @@ Yep, really. So many of the ones currently out there are not suitable for large 
 
 This is because many random redirect plugins rely on the <code>'orderby' => 'rand'</code> constraint in Wordpress, or directly use <code>'ORDER BY RAND()'</code> in their MySQL queries. This results in notoriously poor performance and can really cause problems with your MySQL server if this operation is heavily repeated on a website with lots of eligible posts.
 
-This plugin uses a more efficient approach, including transient caching of all eligible posts for its random selection, to minimise the time it takes to pick a true random post.
+This plugin uses a more efficient approach, including transient caching of all eligible posts by category and their post counts to minimise the time it takes to pick a true random post.
 
 = How do I set the URL? =
 
 Go to Settings > Better Random Redirect and change the URL slug from the default of "random" to whatever you want it to be.
 
+= How do I make the randomiser use just one category for everything? =
+
+Select the category you want to use in Settings > Better Random Redirect. This will become the default category used for all subsequent random requests. It can be overridden, however using the cat= shortcode attribute or query string as described below. 
+
 = How do I create buttons or navigation menu links to random posts? =
 
-Simply use the URL you set up in the configuration as above as the link for the navigation item or button.
+Use the shortcode <code>[random-url]</code> anywhere you want to place the URL for a link to the randomiser, such as in text links or buttons. You can also use the cat= attribute to create a link to a randomiser that will only select random posts from a specific category. 
+
+Alternatively, simply use the URL you set up in the configuration above as the link for the navigation item or button, and optionally append cat= as part of the URL query string.
 
 = How do I tell the randomiser to use a particular category? =
 
-For random results in e.g. category 'foo', append ?cat=foo on the URL line of the URL you configured above. The randomiser will then select a random post from that category.
+For random results in e.g. category 'foo', use the shortcode <code>[random-url cat="foo"]</code>. The generated link will select a random post from that category. Alternatively, use the URL you set up in the configuration above, and optionally append cat= as part of the URL query string.
+
+= What is the r= parameter I see at the end of generated URLs? =
+
+This is a random integer in the range of possible index values for the relevant category. It is appended to the generated URLs to defeat URL-based caching, and also to give deterministic routing of results (i.e. the same r value and category combination will lead to the same post each time). This helps with services like Facebook that cache the resulting 302 redirect, to make sure they are caching accurate metadata on a link-by-link basis.
 
 == Screenshots ==
 
 1. Configuration options screen
 
 == Changelog ==
+
+= 1.1 =
+
+* Configurable global category
+* Shortocde [random-url] with optional cat parameter for category override
+* Deterministic routing and cache defeating using r= parameter on all generated URLs
 
 = 1.0 =
 
