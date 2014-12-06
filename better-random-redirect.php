@@ -4,7 +4,7 @@ Plugin Name: Better Random Redirect
 Plugin URI: https://wordpress.org/plugins/better-random-redirect/
 Description: Based on the original Random Redirect, this plugin enables efficent, easy random redirection to a post.
 Author: Robert Peake
-Version: 1.1
+Version: 1.2
 Author URI: http://www.robertpeake.com/
 Text Domain: better_random_redirect
 Domain Path: /languages/
@@ -87,7 +87,7 @@ function random_url_shortcode( $atts ) {
     if (strlen($category) > 0) {
         $query_data['cat'] = $category;
     }
-    $query_data['r'] = rand(0,$max);
+    $query_data['r'] = mt_rand(0,$max);
     $query_part = http_build_query($query_data);
     if ($query_part && strlen($query_part) > 0) {
         $url = $url_base . '?' . $query_part;
@@ -137,7 +137,7 @@ function do_redirect() {
             if (isset($_GET['r']) && is_numeric($_GET['r']) &&  ( ctype_digit($_GET['r']) || is_int($_GET['r']) ) && $_GET['r'] >= 0 && $_GET['r'] <= $max ) {
                 $index = filter_var($_GET['r'], FILTER_SANITIZE_NUMBER_INT);
             } else {
-                $index = rand(0,$max); // get a random index in PHP
+                $index = mt_rand(0,$max); // get a random index in PHP
             }
             if (isset($post_ids[$index])) {
                 $id = $post_ids[$index];
@@ -151,7 +151,7 @@ function do_redirect() {
                         exit;
                     } else {
                         // not a valid post, try again up to $max_count times
-                        $index = rand(0,$max);
+                        $index = mt_rand(0,$max);
                         $id = $post_ids[$index];
                     }
                     $count++;
