@@ -4,7 +4,7 @@ Plugin Name: Better Random Redirect
 Plugin URI: https://wordpress.org/plugins/better-random-redirect/
 Description: Based on the original Random Redirect, this plugin enables efficent, easy random redirection to a post.
 Author: Robert Peake
-Version: 1.2
+Version: 1.2.1
 Author URI: http://www.robertpeake.com/
 Text Domain: better_random_redirect
 Domain Path: /languages/
@@ -25,9 +25,12 @@ function register_menu_page(){
 
 function register_settings() {
     global $wpdb;
+    /* user-configurable values */
     add_option('brr_default_slug', __('random','better_random_redirect'));
     add_option('brr_default_timeout', 3600);
     add_option('brr_default_category', '');
+    
+    /* global non-configurable values used across functions */
     add_option('brr_transient_id','better_random_redirect_post_ids');
     add_option('brr_query_pattern','SELECT %s FROM '.$wpdb->posts.' where post_type=\'post\' and post_status=\'publish\' and post_password = \'\'');
     add_option('brr_query_category_pattern', 'SELECT %s FROM '.$wpdb->posts.' p '.
@@ -35,21 +38,23 @@ function register_settings() {
                  'LEFT OUTER JOIN '.$wpdb->term_taxonomy.' x ON x.term_taxonomy_id = r.term_taxonomy_id '.
                  'LEFT OUTER JOIN '.$wpdb->terms.' t ON t.term_id = x.term_id '.
                  ' where post_type=\'post\' and post_status=\'publish\' and post_password = \'\' and t.slug=\'%s\'');
+    
+    /* user-configurable value checking functions */
     register_setting( 'better_random_redirect', 'brr_default_slug', '\better_random_redirect\slug_check' );
     register_setting( 'better_random_redirect', 'brr_default_category', '\better_random_redirect\cat_check' ); 
     register_setting( 'better_random_redirect', 'brr_default_timeout', '\better_random_redirect\integer_check' );  
 }
 
 function slug_check( $string ) {
-    return filter_var($string, FILTER_SANITIZE_URL);
+    return filter_var($string, FILTER_SANITIZE_URL); //must consist of valid URL characters
 }
 
 function cat_check( $string ) {
     if ($string == '') {
-        return $string;
+        return $string; //blank is valid for 'all categories'
     }
-    $string = filter_var($string, FILTER_SANITIZE_STRING);
-    if (term_exists($string,'category')) {
+    $string = filter_var($string, FILTER_SANITIZE_STRING); //must be a valid string
+    if (term_exists($string,'category')) { //must exist in category taxonomy
         return $string;
     } else {
         return '';
@@ -62,27 +67,40 @@ function integer_check( $int ) {
 
 function random_url_shortcode( $atts ) {
     global $wpdb;
+    
+    // get some options
     $url_slug = get_option('brr_default_slug'); //slug to use in URL
     $expiration = get_option('brr_default_timeout'); //how long to cache the list of valid posts (in seconds)
     $transient_id = get_option('brr_transient_id');
+    
+    // extract shortcode attribute
     extract( shortcode_atts( array(
                 'cat' => '',
             ), $atts, 'better_random_redirect' ) );
+    
+    // if category exists, use category-specific transient ID
     if ($cat && strlen($cat) > 0 && term_exists($cat,'category')) {
         $category = $cat;
         $transient_id = $transient_id . '_category_'.$category;
     }
-    if (false === ($max = get_transient( $transient_id . '_count'))) {
+    
+    // check the transient cache first, if the post id index maximum is not found or expired, regenerate it
+    if (false === ($max = get_transient( $transient_id . '_max'))) {
+        //if no category, use default all-post query
         if ($category && strlen($category) > 0) {
-            $query = sprintf( get_option('brr_query_category_pattern'), 'count(*)',$category);
+            $query = $wpdb->prepare( sprintf( sprintf(get_option('brr_query_category_pattern'), 'count(*)', '%s'), $category));
+        // otherwise, use category-specific query
         } else {
             $query = sprintf(get_option('brr_query_pattern'),'count(*)');
         }
         $total = $wpdb->get_var($query);
-        $max = $total - 1;
-        set_transient( $transient_id . '_count', $max, $expiration);
+        $max = $total - 1; //use index range, not total count
+        set_transient( $transient_id . '_max', $max, $expiration);
     }
+    // build URL base
     $url_base = site_url().'/'.$url_slug.'/';
+    
+    // build query string
     $query_data = array();
     if (strlen($category) > 0) {
         $query_data['cat'] = $category;
@@ -99,17 +117,11 @@ function random_url_shortcode( $atts ) {
 
 function do_redirect() {
     global $wpdb;
+
+    //get URL slug for matching
     $url_slug = get_option('brr_default_slug'); //slug to use in URL
-    $expiration = get_option('brr_default_timeout');; //how long to cache the list of valid posts (in seconds)
-    $transient_id = get_option('brr_transient_id');
-    if (isset($_GET['cat']) && term_exists($_GET['cat'],'category')) {
-        $category = $_GET['cat'];
-    } else {
-        $category = get_option('brr_default_category');
-    }
-    if ($category && strlen($category) > 0) {
-        $transient_id = $transient_id . '_category_'.$category;
-    }
+    
+    // parse site URL for matching
     $url_base = parse_url(site_url(),PHP_URL_PATH);
     $url_current = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
     if (substr($url_base,-1) != '/') {
@@ -118,47 +130,77 @@ function do_redirect() {
     if (substr($url_base,0,1) != '/') {
         $url_base = '/'.$url_base;
     }
+    // if we are in a designated randomiser URL location, get to work
     if (  $url_base.$url_slug == $url_current || $url_base.$url_slug.'/' == $url_current ) {
+        // get some options
+        $expiration = get_option('brr_default_timeout');; //how long to cache the list of valid posts (in seconds)
+        $transient_id = get_option('brr_transient_id');
+        
+        // use URL category if available on query line, otherwise default
+        if (isset($_GET['cat']) && term_exists($_GET['cat'],'category')) {
+            $category = $_GET['cat'];
+        } else {
+            $category = get_option('brr_default_category');
+        }
+        
+        // if category exists, use category-specific transient ID
+        if ($category && strlen($category) > 0) {
+            $transient_id = $transient_id . '_category_'.$category; 
+        }
+        
         // check the transient cache first, if either the post id list or count is not found or expired, regenerate both
-        if ( false === ( $post_ids = get_transient( $transient_id ) ) || false === ($max = get_transient( $transient_id . '_count')) ) {
+        if ( false === ( $post_ids = get_transient( $transient_id ) ) || false === ($max = get_transient( $transient_id . '_max')) ) {
+        
+            //if no category, use default all-post query
             if (strlen($category) > 0) {
-                $query = sprintf( get_option('brr_query_category_pattern'), 'ID',$category);
+                $query = $wpdb->prepare( sprintf( get_option('brr_query_category_pattern'), 'ID', '%s') ,$category);
+            //otherwise, use category-specific query
             } else {
                 $query = sprintf(get_option('brr_query_pattern'),'ID');
             }
-            // query for valid posts: type=post and status=published
+
+            // query for valid post IDs
             $post_ids = $wpdb->get_col( $query );
-            // set the cache
+            
+            // set the transient cache for post IDs and index maximum
             set_transient($transient_id, $post_ids, $expiration);
             $max = (sizeof($post_ids) - 1);
-            set_transient( $transient_id . '_count', $max, $expiration);
+            set_transient( $transient_id . '_max', $max, $expiration);
         }
+        
+        // if we have at least one post to choose from
         if ($max >= 0) { //max is indexed from zero to count minus one
+        
+            // if the r-value on the get line is a valid integer-type string and in range, use that for the index, otherwise generate a random integer between 0 and max
             if (isset($_GET['r']) && is_numeric($_GET['r']) &&  ( ctype_digit($_GET['r']) || is_int($_GET['r']) ) && $_GET['r'] >= 0 && $_GET['r'] <= $max ) {
                 $index = filter_var($_GET['r'], FILTER_SANITIZE_NUMBER_INT);
             } else {
                 $index = mt_rand(0,$max); // get a random index in PHP
             }
+            
+            // if a valid post id exists at that index
             if (isset($post_ids[$index])) {
                 $id = $post_ids[$index];
-                $max_count = 10; //how many "lucky dip" requests to make before giving up, in case the cache and actual posts are considerably out of sync
+                
+                // query for posts multiple times if needed, in case the cache and actual posts are considerably out of sync, but don't get into an infiinte loop
+                $max_count = 10; //how many "lucky dip" requests to make before giving up, 
                 do {
                     $post = get_post( $id );
                     if ($post) {
                         // found a valid random post, redirect to it
                         \better_random_redirect\force_redirect_no_cache();
                         wp_redirect ( get_permalink ( $post->ID ) , 302 );
-                        exit;
+                        exit; //job done
                     } else {
-                        // not a valid post, try again up to $max_count times
+                        // not a valid post, regenerate index and id and try again up to $max_count times
                         $index = mt_rand(0,$max);
                         $id = $post_ids[$index];
                     }
                     $count++;
                 } while (!$post && $count < $max_count); //continue as long as we haven't exceeded $max_count
-            }
-        }
-    }
+            } // initial index was not in valid range
+        } // no post IDs in the set to pick from
+    } // we are not in the randomiser URL
 }
 
 function force_redirect_no_cache() {
