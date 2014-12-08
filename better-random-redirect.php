@@ -4,7 +4,7 @@ Plugin Name: Better Random Redirect
 Plugin URI: https://wordpress.org/plugins/better-random-redirect/
 Description: Based on the original Random Redirect, this plugin enables efficent, easy random redirection to a post.
 Author: Robert Peake
-Version: 1.2.1
+Version: 1.3
 Author URI: http://www.robertpeake.com/
 Text Domain: better_random_redirect
 Domain Path: /languages/
@@ -29,19 +29,21 @@ function register_settings() {
     add_option('brr_default_slug', __('random','better_random_redirect'));
     add_option('brr_default_timeout', 3600);
     add_option('brr_default_category', '');
+    add_option('brr_default_posttype', 'post');
     
     /* global non-configurable values used across functions */
     add_option('brr_transient_id','better_random_redirect_post_ids');
-    add_option('brr_query_pattern','SELECT %s FROM '.$wpdb->posts.' where post_type=\'post\' and post_status=\'publish\' and post_password = \'\'');
-    add_option('brr_query_category_pattern', 'SELECT %s FROM '.$wpdb->posts.' p '.
+    add_option('brr_query_posttype_pattern','SELECT %s FROM '.$wpdb->posts.' where post_type=\'%s\' and post_status=\'publish\' and post_password = \'\'');
+    add_option('brr_query_posttype_category_pattern', 'SELECT %s FROM '.$wpdb->posts.' p '.
                  'LEFT OUTER JOIN '.$wpdb->term_relationships.' r ON r.object_id = p.ID '.
                  'LEFT OUTER JOIN '.$wpdb->term_taxonomy.' x ON x.term_taxonomy_id = r.term_taxonomy_id '.
                  'LEFT OUTER JOIN '.$wpdb->terms.' t ON t.term_id = x.term_id '.
-                 ' where post_type=\'post\' and post_status=\'publish\' and post_password = \'\' and t.slug=\'%s\'');
+                 ' where post_type=\'%s\' and post_status=\'publish\' and post_password = \'\' and t.slug=\'%s\'');
     
     /* user-configurable value checking functions */
     register_setting( 'better_random_redirect', 'brr_default_slug', '\better_random_redirect\slug_check' );
-    register_setting( 'better_random_redirect', 'brr_default_category', '\better_random_redirect\cat_check' ); 
+    register_setting( 'better_random_redirect', 'brr_default_category', '\better_random_redirect\cat_check' );
+    register_setting( 'better_random_redirect', 'brr_default_posttype', '\better_random_redirect\posstype_check' );
     register_setting( 'better_random_redirect', 'brr_default_timeout', '\better_random_redirect\integer_check' );  
 }
 
@@ -61,6 +63,18 @@ function cat_check( $string ) {
     }
 }
 
+function posttype_check( $string ) {
+    if ($string == 'post') {
+        return $string; //post is valid default
+    }
+    $string = filter_var($string, FILTER_SANITIZE_STRING); //must be a valid string
+    if (post_type_exists($string)) { //must exist in category taxonomy
+        return $string;
+    } else {
+        return 'post';
+    }
+}
+
 function integer_check( $int ) {
     return filter_var($int, FILTER_SANITIZE_NUMBER_INT);
 }
@@ -76,23 +90,34 @@ function random_url_shortcode( $atts ) {
     // extract shortcode attribute
     extract( shortcode_atts( array(
                 'cat' => '',
+                'posttype' => 'post',
             ), $atts, 'better_random_redirect' ) );
     
+    if ($posttype == 'page') {
+        $category = '';
+    }
+
     // if category exists, use category-specific transient ID
     if ($cat && strlen($cat) > 0 && term_exists($cat,'category')) {
         $category = $cat;
         $transient_id = $transient_id . '_category_'.$category;
     }
+    // if posttype exists, use posttype-specific transient ID
+    if ($posttype && $posttype != 'post') {
+        $transient_id = $transient_id . '_posttype_'.$posttype; 
+    }
     
     // check the transient cache first, if the post id index maximum is not found or expired, regenerate it
     if (false === ($max = get_transient( $transient_id . '_max'))) {
-        //if no category, use default all-post query
-        if ($category && strlen($category) > 0) {
-            $query = $wpdb->prepare( sprintf( sprintf(get_option('brr_query_category_pattern'), 'count(*)', '%s'), $category));
-        // otherwise, use category-specific query
+        
+        //Use category-specific query
+        if (strlen($category) > 0) {
+            $query = $wpdb->prepare( sprintf( get_option('brr_query_posttype_category_pattern'), 'count(*)', '%s','%s') ,$posttype,$category);
+        //Use posttype-specific query
         } else {
-            $query = sprintf(get_option('brr_query_pattern'),'count(*)');
+            $query = $wpdb->prepare(sprintf(get_option('brr_query_posttype_pattern'),'count(*)','%s'),$posttype);
         }
+        
         $total = $wpdb->get_var($query);
         $max = $total - 1; //use index range, not total count
         set_transient( $transient_id . '_max', $max, $expiration);
@@ -104,6 +129,9 @@ function random_url_shortcode( $atts ) {
     $query_data = array();
     if (strlen($category) > 0) {
         $query_data['cat'] = $category;
+    }
+    if (strlen($posttype) > 0) {
+        $query_data['posttype'] = $posttype;
     }
     $query_data['r'] = mt_rand(0,$max);
     $query_part = http_build_query($query_data);
@@ -143,20 +171,40 @@ function do_redirect() {
             $category = get_option('brr_default_category');
         }
         
+        // use URL posttype if available on query line, otherwise default
+        if (isset($_GET['posttype']) && post_type_exists($_GET['posttype'])) {
+            $posttype = $_GET['posttype'];
+        } else {
+            $posttype = get_option('brr_default_posttype');
+            if (strlen($posttype) == 0) {
+                $posttype = 'post';
+            }
+        }
+        
+        if ($posttype == 'page') {
+            $category = '';
+        }
+        
         // if category exists, use category-specific transient ID
         if ($category && strlen($category) > 0) {
             $transient_id = $transient_id . '_category_'.$category; 
         }
         
+        // if posttype exists, use posttype-specific transient ID
+        if ($posttype && $posttype != 'post') {
+            $transient_id = $transient_id . '_posttype_'.$posttype; 
+        }
+        
         // check the transient cache first, if either the post id list or count is not found or expired, regenerate both
         if ( false === ( $post_ids = get_transient( $transient_id ) ) || false === ($max = get_transient( $transient_id . '_max')) ) {
         
-            //if no category, use default all-post query
+            
+            //Use category-specific query
             if (strlen($category) > 0) {
-                $query = $wpdb->prepare( sprintf( get_option('brr_query_category_pattern'), 'ID', '%s') ,$category);
-            //otherwise, use category-specific query
+                $query = $wpdb->prepare( sprintf( get_option('brr_query_posttype_category_pattern'), 'ID', '%s','%s') , $posttype, $category);
+            //Use posttype-specific query
             } else {
-                $query = sprintf(get_option('brr_query_pattern'),'ID');
+                $query = $wpdb->prepare(sprintf(get_option('brr_query_posttype_pattern'),'ID','%s'),$posttype);
             }
 
             // query for valid post IDs

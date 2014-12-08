@@ -3,7 +3,7 @@ Contributors: robert@peakepro.com
 Tags: random,post,category
 Requires at least: 3.0.0
 Tested up to: 4.0.1
-Stable tag: 1.2.1
+Stable tag: 1.3
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -39,21 +39,31 @@ Go to Settings > Better Random Redirect and change the URL slug from the default
 
 Select the category you want to use in Settings > Better Random Redirect. This will become the default category used for all subsequent random requests. It can be overridden, however using the cat= shortcode attribute or query string as described below.
 
+= How do I make the randomiser use just one post type for everything? =
+
+Select the post type you want to use in Settings > Better Random Redirect. This will become the default post type used for all subsequent random requests. It can be overridden, however using the posttype= shortcode attribute or query string as described below.
+
 = How do I tell the randomiser to override the default category for a single link? =
 
 For random results in e.g. category 'foo', use the shortcode <code>[random-url cat="foo"]</code>. The generated link will select a random post from that category. 
 
 Alternatively, use the URL you set up in the configuration above, and optionally append cat= as part of the URL query string.
 
+= How do I tell the randomiser to override the default post type for a single link? =
+
+For random results in e.g. post type 'page', use the shortcode <code>[random-url posttype="page"]</code>. The generated link will select a random post from that post type. 
+
+Alternatively, use the URL you set up in the configuration above, and optionally append posttype= as part of the URL query string.
+
 = How do I create buttons links to random posts? =
 
-Use the shortcode <code>[random-url]</code> anywhere you want to place the URL for a link to the randomiser, such as in text links or buttons. You can also use the cat= attribute to create a link to a randomiser that will only select random posts from a specific category.
+Use the shortcode <code>[random-url]</code> anywhere you want to place the URL for a link to the randomiser, such as in text links or buttons. You can also use the cat= attribute to create a link to a randomiser that will only select random posts from a specific category, or the posttype= attribute to create a link to a randomiser that will only select random posts from a specific post type.
 
-Alternatively, simply use the URL you set up in the configuration above as the link for the link or button, and optionally append cat= as part of the URL query string.
+Alternatively, simply use the URL you set up in the configuration above as the link for the link or button, and optionally append cat= and/or posttype= as part of the URL query string.
 
 = How do I add these buttons or links to a sidebar or navigation menu item? =
 
-You can use the URL you set up in the configuration, and optionally append cat= as part of the URL query string.
+You can use the URL you set up in the configuration, and optionally append cat= and/or posttype= as part of the URL query string.
 
 Alternatively, for sidebar items, you can use the PHP Widget along with some php code like <code><?php echo do_sidebar('[random-url]'); ?></code> to resolve the shortcode to a link that includes the r= attribute to defeat URL-based caching.
 
@@ -66,6 +76,10 @@ This is a random integer in the range of possible index values for the relevant 
 1. Configuration options screen
 
 == Changelog ==
+
+= 1.3 =
+
+* Support for different post types
 
 = 1.2.1 =
 

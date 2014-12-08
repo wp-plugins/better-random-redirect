@@ -6,6 +6,7 @@ if (!is_admin()) {
 <h2><?php _e('Better Random Redirect','better_random_redirect'); ?></h2>
 <div class="highlight" id="brr_default_slug_help_text"><?php _e('Configure the URL you want to use.', 'better_random_redirect'); ?></div>
 <div class="highlight" id="brr_default_category_help_text"><?php _e('Configure the category of posts you want to use as the basis for the randomiser. Leave set at "All Categories" to include posts in all categories. This value can be overridden in the shortcode and by using cat= in the url.','better_random_redirect') ?></div>
+<div class="highlight" id="brr_default_posttype_help_text"><?php _e('Configure the post types you want to use as the basis for the randomiser. Leave set to the default of "Posts" to include blog posts. This value can be overridden in the shortcode and by using posttype= in the url.','better_random_redirect') ?></div>
 <div class="highlight" id="brr_default_timeout_help_text"><?php _e('Cache time represents how long to cache the list of valid posts (in seconds), and therefore affects how long it takes for new posts become eligible to be part of the randomiser. Leave this setting at the default unless you have a specific reason to change it.','better_random_redirect') ?></div>
 <form method="post" action="options.php">
 <?php
@@ -26,6 +27,18 @@ echo settings_fields( 'better_random_redirect' );
                 $categories = get_categories();  
                 foreach ($categories as $category): ?>
                     <option value="<?php echo $category->slug; ?>" <?php if ($category->slug == get_option('brr_default_category')) echo 'selected="selected"'; ?> ><?php echo $category->name; ?></option>
+                <?php endforeach; ?>
+	        </select>
+	    </td>
+	</tr>
+    <tr valign="top">
+            <th scope="row"><label for="id_brr_default_posttype"><?php _e('Post Type to use','better_random_redirect'); ?>: <span id="brr_default_posttype_help" class="dashicons dashicons-editor-help"></span></label></th>
+	    <td>
+	        <select name="brr_default_posttype" id="id_brr_default_posttype">
+                <?php 
+                $posttypes = get_post_types();  
+                foreach ($posttypes as $posttype): ?>
+                    <option value="<?php echo $posttype; ?>" <?php if ($posttype == get_option('brr_default_posttype')) echo 'selected="selected"'; ?> ><?php echo $posttype; ?></option>
                 <?php endforeach; ?>
 	        </select>
 	    </td>
@@ -86,6 +99,14 @@ echo settings_fields( 'better_random_redirect' );
         console.log($('#wpadminbar').height() + ',' + $('#adminmenuwrap').width() );
     }, function() {
         $('#brr_default_category_help_text').fadeOut();
+    });
+    $('#brr_default_posttype_help_text').css({ 'position' : 'absolute', 'max-width' : '320px' }).hide();
+    $('#brr_default_posttype_help').hover( function() {
+        $('#brr_default_posttype_help_text').css({ 'top' : mouseY - $('#wpadminbar').height() , 'left': mouseX - $('#adminmenuwrap').width() }).fadeIn();
+        console.log(mouseX + ',' + mouseY);
+        console.log($('#wpadminbar').height() + ',' + $('#adminmenuwrap').width() );
+    }, function() {
+        $('#brr_default_posttype_help_text').fadeOut();
     });
     $('#brr_default_timeout_help_text').css({ 'position' : 'absolute', 'max-width' : '320px' }).hide();
     $('#brr_default_timeout_help').hover( function() {
