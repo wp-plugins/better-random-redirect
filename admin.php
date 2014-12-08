@@ -16,7 +16,7 @@ echo settings_fields( 'better_random_redirect' );
 	<tr valign="top">
             <th scope="row"><label for="id_brr_default_slug"><?php _e('Main Randomiser URL','better_random_redirect'); ?>: <span id="brr_default_slug_help" class="dashicons dashicons-editor-help"></span>
             </label></th>
-	    <td><?php echo network_site_url(); ?>/<input type="text" id="id_brr_default_slug" name="brr_default_slug" value="<?php echo get_option('brr_default_slug'); ?>" size="12" />/</td>
+	    <td><?php echo site_url(); ?>/<input type="text" id="id_brr_default_slug" name="brr_default_slug" value="<?php echo get_option('brr_default_slug'); ?>" size="12" />/</td>
 	</tr>
     <tr valign="top">
             <th scope="row"><label for="id_brr_default_category"><?php _e('Category to use','better_random_redirect'); ?>: <span id="brr_default_category_help" class="dashicons dashicons-editor-help"></span></label></th>
@@ -65,13 +65,18 @@ echo settings_fields( 'better_random_redirect' );
         </tr>
         <tr>
             <td><code>[random-url]</code></td>
-            <td><a href="#"><?php echo network_site_url().'/'.get_option('brr_default_slug').'/'; ?></td>
+            <td><a href="#"><?php echo site_url().'/'.get_option('brr_default_slug').'/'; ?></td>
             <td><?php echo sprintf(__('Random post from %s','better_random_redirect'), $current_cat); ?></a></td>
         </tr>
         <tr>
             <td><code>[random-url cat="foo"]</code></td>
-            <td><a href="#"><?php echo network_site_url().'/'.get_option('brr_default_slug').'/?cat=foo'; ?></a></td>
+            <td><a href="#"><?php echo site_url().'/'.get_option('brr_default_slug').'/?cat=foo'; ?></a></td>
             <td><?php _e('Random post from "foo"','better_random_redirect'); ?></td>
+        </tr>
+        <tr>
+            <td><code>[random-url posttype="page"]</code></td>
+            <td><a href="#"><?php echo site_url().'/'.get_option('brr_default_slug').'/?posttype=page'; ?></a></td>
+            <td><?php _e('Random post of type "page"','better_random_redirect'); ?></td>
         </tr>
     </table>
     <?php submit_button(); ?>
