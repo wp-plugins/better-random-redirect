@@ -43,7 +43,7 @@ function register_settings() {
     /* user-configurable value checking functions */
     register_setting( 'better_random_redirect', 'brr_default_slug', '\better_random_redirect\slug_check' );
     register_setting( 'better_random_redirect', 'brr_default_category', '\better_random_redirect\cat_check' );
-    register_setting( 'better_random_redirect', 'brr_default_posttype', '\better_random_redirect\posstype_check' );
+    register_setting( 'better_random_redirect', 'brr_default_posttype', '\better_random_redirect\posttype_check' );
     register_setting( 'better_random_redirect', 'brr_default_timeout', '\better_random_redirect\integer_check' );  
 }
 
