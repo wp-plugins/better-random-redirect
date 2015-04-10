@@ -4,7 +4,7 @@ Plugin Name: Better Random Redirect
 Plugin URI: https://wordpress.org/plugins/better-random-redirect/
 Description: Based on the original Random Redirect, this plugin enables efficent, easy random redirection to a post.
 Author: Robert Peake
-Version: 1.3.2
+Version: 1.3.3
 Author URI: http://www.robertpeake.com/
 Text Domain: better_random_redirect
 Domain Path: /languages/
@@ -25,6 +25,7 @@ function register_menu_page(){
 
 function register_settings() {
     global $wpdb;
+
     /* user-configurable values */
     add_option('brr_default_slug', __('random','better_random_redirect'));
     add_option('brr_default_timeout', 3600);
@@ -81,6 +82,7 @@ function integer_check( $int ) {
 
 function random_url_shortcode( $atts ) {
     global $wpdb;
+    global $q_config;
     
     // get some options
     $url_slug = get_option('brr_default_slug'); //slug to use in URL
@@ -91,6 +93,7 @@ function random_url_shortcode( $atts ) {
     extract( shortcode_atts( array(
                 'cat' => '',
                 'posttype' => 'post',
+                'lang' => strstr( get_locale(), '_', true),
             ), $atts, 'better_random_redirect' ) );
     
     if ($posttype == 'page') {
@@ -106,6 +109,9 @@ function random_url_shortcode( $atts ) {
     if ($posttype && $posttype != 'post') {
         $transient_id = $transient_id . '_posttype_'.$posttype; 
     }
+    if (isset($q_config['default_language']) && $lang != $q_config['default_language']) {
+        $transient_id = $transient_id . '_qtranslate_'.$lang; 
+    }
     
     // check the transient cache first, if the post id index maximum is not found or expired, regenerate it
     if (false === ($max = get_transient( $transient_id . '_max'))) {
@@ -117,13 +123,25 @@ function random_url_shortcode( $atts ) {
         } else {
             $query = $wpdb->prepare(sprintf(get_option('brr_query_posttype_pattern'),'count(*)','%s'),$posttype);
         }
+	$additional_where = '';
+	if(isset($q_config['default_language']) && $lang != $q_config['default_language']) {
+	    $additional_where = ' and '.$wpdb->posts.'.post_content like \'%[:'.$q_config['language'].']%\' ';
+	}
+        $query .= $additional_where;
         
         $total = $wpdb->get_var($query);
         $max = $total - 1; //use index range, not total count
+        if ($max < 0) {
+            $max = 0;
+        }
         set_transient( $transient_id . '_max', $max, $expiration);
     }
     // build URL base
-    $url_base = site_url().'/'.$url_slug.'/';
+    $url_base = site_url();
+    if (isset($q_config['language'])) {
+        $url_base .= '/' . $lang;
+    }
+    $url_base .= '/'.$url_slug.'/';
     
     // build query string
     $query_data = array();
@@ -145,6 +163,7 @@ function random_url_shortcode( $atts ) {
 
 function do_redirect() {
     global $wpdb;
+    global $q_config;
 
     //get URL slug for matching
     $url_slug = get_option('brr_default_slug'); //slug to use in URL
@@ -158,8 +177,13 @@ function do_redirect() {
     if (substr($url_base,0,1) != '/') {
         $url_base = '/'.$url_base;
     }
+    $match_url = $url_base;
+    if (isset($q_config['language']) && $q_config['language'] != $q_config['default_language']) {
+        $match_url .= $q_config['language'] . '/';
+    }
+    $match_url .= $url_slug;
     // if we are in a designated randomiser URL location, get to work
-    if (  $url_base.$url_slug == $url_current || $url_base.$url_slug.'/' == $url_current ) {
+    if (  $match_url == $url_current || $match_url.'/' == $url_current ) {
         // get some options
         $expiration = get_option('brr_default_timeout');; //how long to cache the list of valid posts (in seconds)
         $transient_id = get_option('brr_transient_id');
@@ -206,6 +230,14 @@ function do_redirect() {
             } else {
                 $query = $wpdb->prepare(sprintf(get_option('brr_query_posttype_pattern'),'ID','%s'),$posttype);
             }
+
+	    /* additional WHERE filters (to be used with AND) */
+	    $additional_where = '';
+	    if(isset($q_config['language']) && $q_config['language'] != $q_config['default_language']) {
+		$additional_where = ' and '.$wpdb->posts.'.post_content like \'%[:'.$q_config['language'].']%\' ';
+                $transient_id .= '_qtranslate_'.$q_config['language'];
+	    }
+            $query .= $additional_where;
 
             // query for valid post IDs
             $post_ids = $wpdb->get_col( $query );
