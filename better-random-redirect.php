@@ -4,7 +4,7 @@ Plugin Name: Better Random Redirect
 Plugin URI: https://wordpress.org/plugins/better-random-redirect/
 Description: Based on the original Random Redirect, this plugin enables efficent, easy random redirection to a post.
 Author: Robert Peake
-Version: 1.3.3
+Version: 1.3.4
 Author URI: http://www.robertpeake.com/
 Text Domain: better_random_redirect
 Domain Path: /languages/
@@ -40,6 +40,7 @@ function register_settings() {
                  'LEFT OUTER JOIN '.$wpdb->term_taxonomy.' x ON x.term_taxonomy_id = r.term_taxonomy_id '.
                  'LEFT OUTER JOIN '.$wpdb->terms.' t ON t.term_id = x.term_id '.
                  ' where post_type=\'%s\' and post_status=\'publish\' and post_password = \'\' and t.slug=\'%s\'');
+    add_option('brr_query_qtranslate_pattern', ' and '.$wpdb->posts.'.post_content like %s ');
     
     /* user-configurable value checking functions */
     register_setting( 'better_random_redirect', 'brr_default_slug', '\better_random_redirect\slug_check' );
@@ -125,7 +126,7 @@ function random_url_shortcode( $atts ) {
         }
 	$additional_where = '';
 	if(isset($q_config['default_language']) && $lang != $q_config['default_language']) {
-	    $additional_where = ' and '.$wpdb->posts.'.post_content like \'%[:'.$q_config['language'].']%\' ';
+            $additional_where = $wpdb->prepare(get_option('brr_query_qtranslate_pattern'), '%[:'.$q_config['language'].']%');
 	}
         $query .= $additional_where;
         
@@ -234,7 +235,7 @@ function do_redirect() {
 	    /* additional WHERE filters (to be used with AND) */
 	    $additional_where = '';
 	    if(isset($q_config['language']) && $q_config['language'] != $q_config['default_language']) {
-		$additional_where = ' and '.$wpdb->posts.'.post_content like \'%[:'.$q_config['language'].']%\' ';
+                $additional_where = $wpdb->prepare(get_option('brr_query_qtranslate_pattern'), '%[:'.$q_config['language'].']%');
                 $transient_id .= '_qtranslate_'.$q_config['language'];
 	    }
             $query .= $additional_where;
