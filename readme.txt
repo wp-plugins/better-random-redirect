@@ -3,7 +3,7 @@ Contributors: robert@peakepro.com
 Tags: random,post,category
 Requires at least: 3.0.0
 Tested up to: 4.1.1
-Stable tag: 1.3.2
+Stable tag: 1.3.4
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -76,6 +76,14 @@ This is a random integer in the range of possible index values for the relevant 
 1. Configuration options screen
 
 == Changelog ==
+
+= 1.3.4 =
+
+ * Improved queries related to qTranslate-X posts
+
+= 1.3.3 =
+
+ * Added support for qTranslate-X
 
 = 1.3.2 =
 

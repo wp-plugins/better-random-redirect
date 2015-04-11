@@ -65,19 +65,36 @@ echo settings_fields( 'better_random_redirect' );
         </tr>
         <tr>
             <td><code>[random-url]</code></td>
-            <td><a href="#"><?php echo site_url().'/'.get_option('brr_default_slug').'/'; ?></td>
+            <td><a href="<?php echo site_url().'/'.get_option('brr_default_slug').'/'; ?>" target="_blank">
+                <?php echo site_url().'/'.get_option('brr_default_slug').'/'; ?>
+            </a></td>
             <td><?php echo sprintf(__('Random post from %s','better_random_redirect'), $current_cat); ?></a></td>
         </tr>
         <tr>
             <td><code>[random-url cat="foo"]</code></td>
-            <td><a href="#"><?php echo site_url().'/'.get_option('brr_default_slug').'/?cat=foo'; ?></a></td>
+            <td><a href="<?php echo site_url().'/'.get_option('brr_default_slug').'/?cat=foo'; ?>" target="_blank">
+                <?php echo site_url().'/'.get_option('brr_default_slug').'/?cat=foo'; ?>
+            </a></td>
             <td><?php _e('Random post from "foo"','better_random_redirect'); ?></td>
         </tr>
         <tr>
             <td><code>[random-url posttype="page"]</code></td>
-            <td><a href="#"><?php echo site_url().'/'.get_option('brr_default_slug').'/?posttype=page'; ?></a></td>
+            <td><a href="<?php echo site_url().'/'.get_option('brr_default_slug').'/?posttype=page'; ?>" target="_blank">
+                <?php echo site_url().'/'.get_option('brr_default_slug').'/?posttype=page'; ?>
+            </a></td>
             <td><?php _e('Random post of type "page"','better_random_redirect'); ?></td>
         </tr>
+	<?php if(isset($q_config['enabled_languages']) && sizeof($q_config['enabled_languages']) > 0): ?>
+                <?php foreach($q_config['enabled_languages'] as $lang): ?>
+			<tr>
+			    <td><code>[random-url lang="<?php echo $lang; ?>"]</code></td>
+			    <td><a href="<?php echo site_url().'/'.$lang.'/'.get_option('brr_default_slug').'/'; ?>" target="_blank">
+				<?php echo site_url().'/'.$lang.'/'.get_option('brr_default_slug').'/'; ?>
+			    </a></td>
+			    <td><?php echo sprintf(__('Random post in the %s language','better_random_redirect'), $q_config['language_name'][$lang]); ?></td>
+			</tr>
+                <?php endforeach; ?>
+	<?php endif; ?>
     </table>
     <?php submit_button(); ?>
 </form>
