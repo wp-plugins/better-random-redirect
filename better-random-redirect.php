@@ -4,7 +4,7 @@ Plugin Name: Better Random Redirect
 Plugin URI: https://wordpress.org/plugins/better-random-redirect/
 Description: Based on the original Random Redirect, this plugin enables efficent, easy random redirection to a post.
 Author: Robert Peake
-Version: 1.3.5
+Version: 1.3.6
 Author URI: http://www.robertpeake.com/
 Text Domain: better_random_redirect
 Domain Path: /languages/
@@ -50,10 +50,10 @@ class BetterRandomRedirect {
         add_option('brr_query_qtranslate_pattern', ' and '.$wpdb->posts.'.post_content like %s ');
         
         /* user-configurable value checking functions */
-        register_setting( 'better_random_redirect', 'brr_default_slug', '\better_random_redirect\slug_check' );
-        register_setting( 'better_random_redirect', 'brr_default_category', '\better_random_redirect\cat_check' );
-        register_setting( 'better_random_redirect', 'brr_default_posttype', '\better_random_redirect\posttype_check' );
-        register_setting( 'better_random_redirect', 'brr_default_timeout', '\better_random_redirect\integer_check' );  
+        register_setting( 'better_random_redirect', 'brr_default_slug', array('BetterRandomRedirect', 'slug_check') );
+        register_setting( 'better_random_redirect', 'brr_default_category', array('BetterRandomRedirect', 'cat_check') );
+        register_setting( 'better_random_redirect', 'brr_default_posttype', array('BetterRandomRedirect', 'posttype_check' ));
+        register_setting( 'better_random_redirect', 'brr_default_timeout', array('BetterRandomRedirect', 'integer_check' ));  
     }
 
     public static function slug_check( $string ) {
@@ -276,7 +276,7 @@ class BetterRandomRedirect {
                         $post = get_post( $id );
                         if ($post) {
                             // found a valid random post, redirect to it
-                            \better_random_redirect\force_redirect_no_cache();
+                            BetterRandomRedirect::force_redirect_no_cache();
                             wp_redirect ( get_permalink ( $post->ID ) , 302 );
                             exit; //job done
                         } else {
