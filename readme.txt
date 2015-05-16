@@ -1,5 +1,5 @@
 === Plugin Name ===
-Contributors: robertpeake
+Contributors: robertpeake, robert.peake
 Tags: random,post,category
 Requires at least: 3.0.0
 Tested up to: 4.2.2
