@@ -65,7 +65,7 @@ Alternatively, simply use the URL you set up in the configuration above as the l
 
 You can use the URL you set up in the configuration, and optionally append cat= and/or posttype= as part of the URL query string.
 
-Alternatively, for sidebar items, you can use the PHP Widget along with some php code like <code><?php echo do_sidebar('[random-url]'); ?></code> to resolve the shortcode to a link that includes the r= attribute to defeat URL-based caching.
+Alternatively, for sidebar items, you can use the PHP Widget along with some php code like <code><?php echo do_shortcode('[random-url]'); ?></code> to resolve the shortcode to a link that includes the r= attribute to defeat URL-based caching.
 
 = What is the r= parameter I see at the end of generated URLs? =
 
